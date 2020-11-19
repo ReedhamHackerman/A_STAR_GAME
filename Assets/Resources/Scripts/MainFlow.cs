@@ -8,29 +8,37 @@ public class MainFlow : MonoBehaviour
     public Vector2Int startAIPos ;
     public bool[,] Walls { get; private set; } = new bool[10, 10]; //false are open
     AStarAgent AI;
-
+    Vector2 RandomValidPositionOnBoard;
     public GameObject player;
     public Vector2 playerVectorPos;
-   
+     public  List<Vector2> availablePos;
+    // public new Collider2D collider2D;
+    public GameObject collider;
     void Start()
     {
 
-
-       playerVectorPos = new Vector2((int)player.transform.position.x, (int)player.transform.position.y);
+        collider = Resources.Load<GameObject>("Prefabs/collider");
+        //collider2D = new Collider2D();
         FillWallArray();
         SpawnPieces();
-        AI.CalculatePath();
-
+        
+      
     }
 
     
     void Update()
     {
-       
-        playerVectorPos = new Vector2((int)player.transform.position.x, (int)player.transform.position.y);
-        AI.Refresh();
-        
+        GetThePlayerPos();
+        Debug.Log(GetThePlayerPos());
     }
+
+
+    public Vector2 GetThePlayerPos()
+    {
+        playerVectorPos = new Vector2((int)player.transform.position.x, (int)player.transform.position.y);
+        return playerVectorPos;
+    }
+
     void FillWallArray()
     {
         for(int i = 0;i<gameBoard.Length;i++)
@@ -40,6 +48,13 @@ public class MainFlow : MonoBehaviour
                 if(!gameBoard[i].squares[j].activeSelf)
                 {
                     Walls[i, j] = true;
+                    // gameBoard[i].squares[j].AddComponent<BoxCollider2D>();
+                    Instantiate<GameObject>(collider, gameBoard[i].squares[j].transform.position, Quaternion.identity);
+                   
+                }
+                else
+                {
+                    availablePos.Add(new Vector2(i, j));
                 }
             }
         }

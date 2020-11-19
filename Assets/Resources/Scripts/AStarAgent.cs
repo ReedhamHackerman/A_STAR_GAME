@@ -13,22 +13,36 @@ public class AStarAgent : MonoBehaviour
     Dictionary<Vector2Int, Node> openNodes = new Dictionary<Vector2Int, Node>();
     Dictionary<Vector2Int, Node> closeNodes = new Dictionary<Vector2Int, Node>();
     List<Node> solutionPath = new List<Node>();
-
+    AIstate aiState = AIstate.Wander;
+    Vector2 currentWanderDestination;
+    
+   // public SpriteRenderer VisionRadius;
+    float vision;
     public void Initialize(MainFlow mainFlow)
     {
         this.mainFlow = mainFlow;
     }
 
-    public void  Refresh()
+
+    private void Start()
     {
-        MoveAlongPath();
+        WanderEnter();
+        vision = 1.5f;
+        //SelectNewWanderDestination();
+        //CalculatePath(currentWanderDestination);
+        //VisionRadius.transform.localScale = new Vector2(VisionRadius.transform.localScale.x*2, VisionRadius.transform.localScale.y * 2)
+        // vision = VisionRadius.transform.localScale.x;
     }
 
 
-    public void CalculatePath()
+
+    public void CalculatePath(Vector2 target)
     {
-        currentNode = new Node(mainFlow.startAIPos, Heuristic(mainFlow.startAIPos), 0, null);
-        while((Vector2)mainFlow.playerVectorPos != currentNode.NodePos)
+       // Debug.Log("Calculating for target " + target);
+
+        currentNode = new Node(new Vector2Int(Mathf.RoundToInt(transform.position.x), Mathf.RoundToInt(transform.position.y)), Heuristic(new Vector2Int(Mathf.RoundToInt(transform.position.x), Mathf.RoundToInt(transform.position.y))), 0, null);
+       
+        while(target != currentNode.NodePos)
         {
             closeNodes.Add(currentNode.NodePos, currentNode);
             openNodes.Remove(currentNode.NodePos);
@@ -43,9 +57,132 @@ public class AStarAgent : MonoBehaviour
                 else if(MovementCost(neighbourPos)<openNodes[neighbourPos].G)
                   openNodes[neighbourPos].ChangeGAndFAndParent(MovementCost(neighbourPos), currentNode);   
             }
+            if (openNodes.Count == 0)
+            {
+               // Debug.Log("cancelling algorithm because no open nodes");
+                break;
+            }
+                
             currentNode = ReturnCurrentNode();
          }
-        FillSolutionList();
+        if (target == currentNode.NodePos)
+        {
+            FillSolutionList();
+           // Debug.Log("solution found of length: " + solutionPath.Count);
+        }
+        else
+            Debug.Log("No available solution was found");
+        
+       
+    }
+    public void Update()
+    {
+        switch (aiState)
+        {
+            case AIstate.Wander:
+                WanderState();
+                break;
+            case AIstate.Chase:
+                ChaseState();
+                break;
+            case AIstate.Investigate:
+                Investigating();
+                break;
+        }
+        MoveAlongPath(currentWanderDestination);
+    }
+
+    void WanderState()
+    {
+        if (Vector2.Distance(transform.position, mainFlow.player.transform.position) < vision)
+        {
+            Transition(AIstate.Chase);
+        }
+        if (Vector2.Distance(transform.position,currentWanderDestination)<=closeEnough)
+        {
+           // Debug.Log("wander state detects destination reached");
+            Transition(AIstate.Wander);
+        }
+       
+    }
+    void Transition(AIstate newState)
+    {
+       // Debug.Log("Transition to state: " + newState.ToString());
+        switch (newState)
+        {
+            case AIstate.Wander:
+                WanderEnter();
+                aiState = AIstate.Wander;
+                break;
+            case AIstate.Chase:
+                ChaseEnter();
+                aiState = AIstate.Chase;
+                break;
+            case AIstate.Investigate:
+                InvestigateEnter();
+                aiState = AIstate.Investigate;
+                break;
+        }
+    }
+    void WanderEnter()
+    {
+       // Debug.Log("Wander enter");
+        ClearListOpenAndCloseAndSolutionPath();
+        SelectNewWanderDestination();
+        CalculatePath(currentWanderDestination);
+        
+            
+    }
+    void ChaseEnter()
+    {
+        Debug.Log("Chase is called");
+      //  currentNode.NodePos =  new Vector2Int(Mathf.RoundToInt(transform.position.x), Mathf.RoundToInt(transform.position.y));
+        ClearListOpenAndCloseAndSolutionPath();
+        currentWanderDestination = mainFlow.GetThePlayerPos();
+        Debug.Log(currentWanderDestination);
+        CalculatePath(currentWanderDestination);
+       
+    }
+
+
+    void InvestigateEnter()
+    {
+
+    }
+    void SelectNewWanderDestination()
+    {
+        int random = Random.Range(0, mainFlow.availablePos.Count);
+    //    Debug.Log(random);
+      
+        currentWanderDestination = mainFlow.availablePos[random];
+        //Debug.Log("Length:" + mainFlow.availablePos.Count);
+        //Debug.Log(currentWanderDestination.x);
+        //Debug.Log(currentWanderDestination.y);
+      //  Debug.Log("new wander dest: " + currentWanderDestination);
+    }
+
+    void ChaseState()
+    {
+        if(Vector2.Distance(transform.position,mainFlow.GetThePlayerPos())>vision)
+        {
+            Transition(AIstate.Wander);
+        }
+    }
+
+   void  Investigating()
+    {
+
+    }
+
+    public void ClearListOpenAndCloseAndSolutionPath()
+    {
+      //  Debug.Log("Clear Called");
+        openNodes.Clear();
+        closeNodes.Clear();
+        solutionPath.Clear();
+        nextNodeToMoveTo = null;
+        nextNodeIndex = 0;
+       
     }
     public List<Vector2Int> FindValidNeighbourSquares()
     {
@@ -54,7 +191,7 @@ public class AStarAgent : MonoBehaviour
         {
             if (x < 0 || x > 9)
                 continue;
-            for (int y = currentNode.NodePos.y; y < currentNode.NodePos.y+2 ; y++)
+            for (int y = currentNode.NodePos.y - 1; y < currentNode.NodePos.y+2 ; y++)
             {
                 if (y < 0 || y > 9)
                     continue;
@@ -106,30 +243,41 @@ public class AStarAgent : MonoBehaviour
         }
         solutionPath.Reverse();
     }
-    void MoveAlongPath()
+    void MoveAlongPath(Vector2 target)
     {
 
-        if(Vector2.Distance(transform.position,mainFlow.playerVectorPos)<= closeEnough)
-            transform.position = new Vector3(nextNodeToMoveTo.NodePos.x, nextNodeToMoveTo.NodePos.y, 0);
+        if (Vector2.Distance(transform.position,target) <= closeEnough)
+            transform.position = new Vector3(target.x, target.y, 0);
         else
         {
-            if (nextNodeToMoveTo == null)
+            if (nextNodeToMoveTo == null && solutionPath.Count > 0)
                 nextNodeToMoveTo = solutionPath[0];
             if (Vector2.Distance(transform.position, nextNodeToMoveTo.NodePos) < closeEnough)
             {
-
+    
                 transform.position = new Vector3(nextNodeToMoveTo.NodePos.x, nextNodeToMoveTo.NodePos.y, 0);
                 nextNodeIndex++;
+                //if(nextNodeIndex>=solutionPath.Count)
+                //{
+                //    Debug.Log("Next node index:" + nextNodeIndex);
+                //    Debug.Log("Solution path count :" + solutionPath.Count);
+                //}
                 nextNodeToMoveTo = solutionPath[nextNodeIndex];
+               
             }
             transform.position = Vector3.MoveTowards(transform.position, new Vector3(nextNodeToMoveTo.NodePos.x, nextNodeToMoveTo.NodePos.y, 0), movementSpeed * Time.deltaTime);
         }
-       
+    
     }
+}
+
+public enum AIstate
+{
+    Wander, Chase, Investigate
 }
 public class Node
 {
-    public Vector2Int NodePos { get; private set; }
+    public Vector2Int NodePos { get;  set; }
     public float H { get; private set; }
     public float G { get; private set; }
     public float F { get; private set; }

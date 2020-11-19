@@ -6,7 +6,7 @@ public class Player : MonoBehaviour
 {
     public Rigidbody2D rb;
     public float moveForce;
-  
+    public MainFlow mainFlow;
     
 
     void Start()
