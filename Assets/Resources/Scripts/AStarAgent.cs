@@ -14,7 +14,7 @@ public class AStarAgent : MonoBehaviour
     Dictionary<Vector2Int, Node> closeNodes = new Dictionary<Vector2Int, Node>();
     List<Node> solutionPath = new List<Node>();
     AIstate aiState = AIstate.Wander;
-    Vector2 currentWanderDestination;
+    Vector2Int currentWanderDestination;
     
    // public SpriteRenderer VisionRadius;
     float vision;
@@ -126,7 +126,7 @@ public class AStarAgent : MonoBehaviour
     }
     void WanderEnter()
     {
-       // Debug.Log("Wander enter");
+        // Debug.Log("Wander enter");
         ClearListOpenAndCloseAndSolutionPath();
         SelectNewWanderDestination();
         CalculatePath(currentWanderDestination);
@@ -138,10 +138,10 @@ public class AStarAgent : MonoBehaviour
         Debug.Log("Chase is called");
       //  currentNode.NodePos =  new Vector2Int(Mathf.RoundToInt(transform.position.x), Mathf.RoundToInt(transform.position.y));
         ClearListOpenAndCloseAndSolutionPath();
-        currentWanderDestination = mainFlow.GetThePlayerPos();
+        currentWanderDestination = new Vector2Int((int)mainFlow.playerVectorPos.x, (int)mainFlow.playerVectorPos.y);
         Debug.Log(currentWanderDestination);
         CalculatePath(currentWanderDestination);
-       
+        Debug.Log("Chase Enter Completed");
     }
 
 
@@ -154,7 +154,7 @@ public class AStarAgent : MonoBehaviour
         int random = Random.Range(0, mainFlow.availablePos.Count);
     //    Debug.Log(random);
       
-        currentWanderDestination = mainFlow.availablePos[random];
+        currentWanderDestination =new Vector2Int((int)mainFlow.availablePos[random].x, (int)mainFlow.availablePos[random].y);
         //Debug.Log("Length:" + mainFlow.availablePos.Count);
         //Debug.Log(currentWanderDestination.x);
         //Debug.Log(currentWanderDestination.y);
@@ -252,6 +252,11 @@ public class AStarAgent : MonoBehaviour
         {
             if (nextNodeToMoveTo == null && solutionPath.Count > 0)
                 nextNodeToMoveTo = solutionPath[0];
+            if (nextNodeToMoveTo == null)
+            {
+                Debug.LogError(nextNodeToMoveTo);
+
+            }
             if (Vector2.Distance(transform.position, nextNodeToMoveTo.NodePos) < closeEnough)
             {
     

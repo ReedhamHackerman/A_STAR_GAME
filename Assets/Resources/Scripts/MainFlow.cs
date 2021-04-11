@@ -26,7 +26,7 @@ public class MainFlow : MonoBehaviour
     }
 
     
-    void Update()
+    void LateUpdate()
     {
         GetThePlayerPos();
         Debug.Log(GetThePlayerPos());
@@ -35,7 +35,7 @@ public class MainFlow : MonoBehaviour
 
     public Vector2 GetThePlayerPos()
     {
-        playerVectorPos = new Vector2((int)player.transform.position.x, (int)player.transform.position.y);
+        playerVectorPos = new Vector2((int)(player.transform.position.x+0.2f), (int)(player.transform.position.y+0.2f));
         return playerVectorPos;
     }
 
